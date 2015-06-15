@@ -1,12 +1,14 @@
 package com.gohmega.pct;
 
-import java.awt.*;
-import java.awt.event.*;
-
 import com.threed.jpct.*;
-import com.threed.jpct.util.*;
+import com.threed.jpct.util.KeyMapper;
+import com.threed.jpct.util.KeyState;
+import com.threed.jpct.util.Light;
+import com.threed.jpct.util.ShadowHelper;
+import org.lwjgl.input.Mouse;
 
-import org.lwjgl.input.*;
+import java.awt.*;
+import java.awt.event.KeyEvent;
 
 public class LeMain implements IPaintListener
 {
@@ -78,6 +80,7 @@ public class LeMain implements IPaintListener
     private void init() throws Exception
     {
         TextureManager tm = TextureManager.getInstance();
+        tm.addTexture("metal", new Texture("res/seamless_metal.jpg"));
         tm.addTexture("grass", new Texture("res/GrassSample2.jpg"));
         tm.addTexture("disco", new Texture("res/disco.jpg"));
         tm.addTexture("rock", new Texture("res/rock.jpg"));
@@ -86,7 +89,7 @@ public class LeMain implements IPaintListener
 
         // Initialize frame buffer
 
-        buffer = new FrameBuffer(1280, 720, FrameBuffer.SAMPLINGMODE_NORMAL);
+        buffer = new FrameBuffer(640, 480, FrameBuffer.SAMPLINGMODE_NORMAL);
         buffer.disableRenderer(IRenderer.RENDERER_SOFTWARE);
         buffer.enableRenderer(IRenderer.RENDERER_OPENGL, IRenderer.MODE_OPENGL);
         buffer.setPaintListener(this);
@@ -109,13 +112,14 @@ public class LeMain implements IPaintListener
 
         // Load/create and setup objects
 
-        plane = Primitives.getPlane(20, 30);
+        plane = Primitives.getPlane(60, 60);
         plane.rotateX(PI / 2f);
         plane.setSpecularLighting(true);
-        plane.setTexture("grass");
+        plane.setTexture("metal");
         //plane.setCollisionMode(Object3D.COLLISION_CHECK_OTHERS);
+        tileTexture(plane, 60.0f);
 
-        puk = Primitives.getCylinder(1.0f);
+        puk = Primitives.getCylinder(360, 1.0f);
         puk.setEnvmapped(Object3D.ENVMAP_ENABLED);
         TextureInfo stoneTex = new TextureInfo(tm.getTextureID("rock"));
         stoneTex.add(tm.getTextureID("normals"), TextureInfo.MODE_MODULATE);
@@ -180,7 +184,7 @@ public class LeMain implements IPaintListener
     private void pollControls()
     {
 
-        KeyState ks = null;
+        KeyState ks;
         while ((ks = keyMapper.poll()) != KeyState.NONE)
         {
             if (ks.getKeyCode() == KeyEvent.VK_ESCAPE)
@@ -311,7 +315,7 @@ public class LeMain implements IPaintListener
         SimpleVector pos = plane.getTransformedCenter();
         SimpleVector offset = new SimpleVector(1, 0, -1).normalize();
 
-        long ticks = 0;
+        long ticks;
 
         while (doLoop)
         {
@@ -369,16 +373,21 @@ public class LeMain implements IPaintListener
         System.exit(0);
     }
 
+    int cLoops = 0;
     private void animate(long ticks)
     {
         if (ticks > 0)
         {
+
             float ft = (float) ticks;
             ind += 0.02f * ft;
             if (ind > 1)
             {
                 ind -= 1;
             }
+            float deg = ((float) cLoops) / 360.0f;
+            puk.translate(0, -60.0f * (float) Math.sin((deg) * PI) / 360.0f, 0);
+            cLoops++;
 //            snork.animate(ind, 2);
 //            snork.rotateY(-0.02f * ft);
 //            snork.translate(0, -50, 0);
@@ -388,6 +397,28 @@ public class LeMain implements IPaintListener
 //            snork.translate(dir);
 //            dir = snork.checkForCollisionEllipsoid(new SimpleVector(0, 100, 0), new SimpleVector(5, 20, 5), 1);
 //            snork.translate(dir);
+        }
+    }
+
+    private void tileTexture(Object3D obj, float tileFactor)
+    {
+        PolygonManager pm = obj.getPolygonManager();
+
+        int end = pm.getMaxPolygonID();
+        for (int i = 0; i < end; i++)
+        {
+            SimpleVector uv0 = pm.getTextureUV(i, 0);
+            SimpleVector uv1 = pm.getTextureUV(i, 1);
+            SimpleVector uv2 = pm.getTextureUV(i, 2);
+
+            uv0.scalarMul(tileFactor);
+            uv1.scalarMul(tileFactor);
+            uv2.scalarMul(tileFactor);
+
+            int id = pm.getPolygonTexture(i);
+
+            TextureInfo ti = new TextureInfo(id, uv0.x, uv0.y, uv1.x, uv1.y, uv2.x, uv2.y);
+            pm.setPolygonTexture(i, ti);
         }
     }
 
