@@ -13,9 +13,10 @@ void main(void)
 	vec3 c1 = cross(gl_Normal, vec3(0.0, 0.0, 1.0)); 
 	vec3 c2 = cross(gl_Normal, vec3(0.0, 1.0, 0.0));
 	
-	vec3 vTangent=c1;
-	if (length(c2)>length(vTangent)) {
-		vTangent=c2;
+	vec3 vTangent = c1;
+	if (length(c2) > length(vTangent))
+	{
+		vTangent = c2;
 	}
 	
 	vTangent = normalize(vTangent);

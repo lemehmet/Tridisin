@@ -89,7 +89,7 @@ public class LeMain implements IPaintListener
 
         // Initialize frame buffer
 
-        buffer = new FrameBuffer(640, 480, FrameBuffer.SAMPLINGMODE_NORMAL);
+        buffer = new FrameBuffer(1920, 1080, FrameBuffer.SAMPLINGMODE_NORMAL);
         buffer.disableRenderer(IRenderer.RENDERER_SOFTWARE);
         buffer.enableRenderer(IRenderer.RENDERER_OPENGL, IRenderer.MODE_OPENGL);
         buffer.setPaintListener(this);
@@ -115,15 +115,17 @@ public class LeMain implements IPaintListener
         plane = Primitives.getPlane(60, 60);
         plane.rotateX(PI / 2f);
         plane.setSpecularLighting(true);
-        plane.setTexture("metal");
+        //plane.setTexture("metal");
+        plane.setTexture("grass");
         //plane.setCollisionMode(Object3D.COLLISION_CHECK_OTHERS);
         tileTexture(plane, 60.0f);
 
         puk = Primitives.getCylinder(360, 1.0f);
         puk.setEnvmapped(Object3D.ENVMAP_ENABLED);
-        TextureInfo stoneTex = new TextureInfo(tm.getTextureID("rock"));
-        stoneTex.add(tm.getTextureID("normals"), TextureInfo.MODE_MODULATE);
-        puk.setTexture(stoneTex);
+//        TextureInfo stoneTex = new TextureInfo(tm.getTextureID("rock"));
+//        stoneTex.add(tm.getTextureID("normals"), TextureInfo.MODE_MODULATE);
+//        puk.setTexture(stoneTex);
+        puk.setTexture("disco");
         puk.setSpecularLighting(true);
 
         // Add objects to the worlds
@@ -161,15 +163,15 @@ public class LeMain implements IPaintListener
         sun.setIntensity(250, 250, 250);
         sun.setAttenuation(800);
 
-        String fragmentShader = Loader.loadTextFile("example/shader/fragmentshader.glsl");
-        String vertexShader = Loader.loadTextFile("example/shader/vertexshader.glsl");
-
-        GLSLShader shader = new GLSLShader(vertexShader, fragmentShader);
-        shader.setShadowHelper(sh);
-        shader.setStaticUniform("colorMap", 0);
-        shader.setStaticUniform("normalMap", 1);
-        shader.setStaticUniform("invRadius", 0.0005f);
-        puk.setRenderHook(shader);
+//        String fragmentShader = Loader.loadTextFile("res/shader/fragmentshader.glsl");
+//        String vertexShader = Loader.loadTextFile("res/shader/vertexshader.glsl");
+//
+//        GLSLShader shader = new GLSLShader(vertexShader, fragmentShader);
+//        shader.setShadowHelper(sh);
+//        shader.setStaticUniform("colorMap", 0);
+//        shader.setStaticUniform("normalMap", 1);
+//        shader.setStaticUniform("invRadius", 0.0005f);
+//        puk.setRenderHook(shader);
 
         // Move camera
 
@@ -187,39 +189,37 @@ public class LeMain implements IPaintListener
         KeyState ks;
         while ((ks = keyMapper.poll()) != KeyState.NONE)
         {
-            if (ks.getKeyCode() == KeyEvent.VK_ESCAPE)
+            switch (ks.getKeyCode())
             {
-                doLoop = false;
-            }
-
-            if (ks.getKeyCode() == KeyEvent.VK_UP)
-            {
-                forward = ks.getState();
-            }
-
-            if (ks.getKeyCode() == KeyEvent.VK_DOWN)
-            {
-                backward = ks.getState();
-            }
-
-            if (ks.getKeyCode() == KeyEvent.VK_LEFT)
-            {
-                left = ks.getState();
-            }
-
-            if (ks.getKeyCode() == KeyEvent.VK_RIGHT)
-            {
-                right = ks.getState();
-            }
-
-            if (ks.getKeyCode() == KeyEvent.VK_PAGE_UP)
-            {
-                up = ks.getState();
-            }
-
-            if (ks.getKeyCode() == KeyEvent.VK_PAGE_DOWN)
-            {
-                down = ks.getState();
+                case KeyEvent.VK_ESCAPE:
+                    doLoop = false;
+                    break;
+                case KeyEvent.VK_UP:
+                case KeyEvent.VK_W:
+                    forward = ks.getState();
+                    break;
+                case KeyEvent.VK_DOWN:
+                case KeyEvent.VK_S:
+                    backward = ks.getState();
+                    break;
+                case KeyEvent.VK_LEFT:
+                case KeyEvent.VK_A:
+                    left = ks.getState();
+                    break;
+                case KeyEvent.VK_RIGHT:
+                case KeyEvent.VK_D:
+                    right = ks.getState();
+                    break;
+                case KeyEvent.VK_PAGE_UP:
+                case KeyEvent.VK_Q:
+                    up = ks.getState();
+                    break;
+                case KeyEvent.VK_PAGE_DOWN:
+                case KeyEvent.VK_E:
+                    down = ks.getState();
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -339,7 +339,8 @@ public class LeMain implements IPaintListener
             projector.lookAt(plane.getTransformedCenter());
             projector.setPosition(pos);
             projector.moveCamera(new SimpleVector(0, -1, 0), 200);
-            projector.moveCamera(offset, 215);
+//            projector.moveCamera(new SimpleVector(0, -1, 0), 200);
+//            projector.moveCamera(offset, 215);
             sun.setPosition(projector.getPosition());
 
             // update the shadow map
@@ -379,15 +380,15 @@ public class LeMain implements IPaintListener
         if (ticks > 0)
         {
 
-            float ft = (float) ticks;
-            ind += 0.02f * ft;
-            if (ind > 1)
-            {
-                ind -= 1;
-            }
-            float deg = ((float) cLoops) / 360.0f;
-            puk.translate(0, -60.0f * (float) Math.sin((deg) * PI) / 360.0f, 0);
-            cLoops++;
+//            float ft = (float) ticks;
+//            ind += 0.02f * ft;
+//            if (ind > 1)
+//            {
+//                ind -= 1;
+//            }
+//            float deg = ((float) cLoops) / 360.0f;
+//            puk.translate(-60.0f * (float) Math.cos((deg) * PI) / 360.0f, -60.0f * (float) Math.sin((deg) * PI) / 360.0f, 60.0f * (float) Math.cos((deg) * PI) / 360.0f);
+//            cLoops++;
 //            snork.animate(ind, 2);
 //            snork.rotateY(-0.02f * ft);
 //            snork.translate(0, -50, 0);
