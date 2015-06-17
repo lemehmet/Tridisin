@@ -80,12 +80,15 @@ public class LeMain implements IPaintListener
     private void init() throws Exception
     {
         TextureManager tm = TextureManager.getInstance();
-        tm.addTexture("metal", new Texture("res/seamless_metal.jpg"));
+        tm.addTexture("metal", new Texture("res/metal.jpg"));
+        tm.addTexture("flo", new Texture("res/fadeflo.jpg"));
         tm.addTexture("grass", new Texture("res/GrassSample2.jpg"));
         tm.addTexture("disco", new Texture("res/disco.jpg"));
         tm.addTexture("rock", new Texture("res/rock.jpg"));
         tm.addTexture("normals", new Texture("res/normals.jpg"));
         tm.addTexture("sky", new Texture("res/sky.jpg"));
+        tm.addTexture("cloth", new Texture("res/cloth.jpg"));
+        tm.addTexture("solid", new Texture("res/solid.jpg"));
 
         // Initialize frame buffer
 
@@ -115,17 +118,17 @@ public class LeMain implements IPaintListener
         plane = Primitives.getPlane(60, 60);
         plane.rotateX(PI / 2f);
         plane.setSpecularLighting(true);
-        //plane.setTexture("metal");
-        plane.setTexture("grass");
+        plane.setTexture("cloth");
+        //plane.setTexture("grass");
         //plane.setCollisionMode(Object3D.COLLISION_CHECK_OTHERS);
-        tileTexture(plane, 60.0f);
+        tileTexture(plane, 100.0f);
 
-        puk = Primitives.getCylinder(360, 1.0f);
+        puk = Primitives.getCylinder(360, 1.0f, 0.2f);
         puk.setEnvmapped(Object3D.ENVMAP_ENABLED);
 //        TextureInfo stoneTex = new TextureInfo(tm.getTextureID("rock"));
 //        stoneTex.add(tm.getTextureID("normals"), TextureInfo.MODE_MODULATE);
 //        puk.setTexture(stoneTex);
-        puk.setTexture("disco");
+        puk.setTexture("solid");
         puk.setSpecularLighting(true);
 
         // Add objects to the worlds
