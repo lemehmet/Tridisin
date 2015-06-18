@@ -1,10 +1,7 @@
 package com.gohmega.pct;
 
 import com.threed.jpct.*;
-import com.threed.jpct.util.KeyMapper;
-import com.threed.jpct.util.KeyState;
-import com.threed.jpct.util.Light;
-import com.threed.jpct.util.ShadowHelper;
+import com.threed.jpct.util.*;
 import org.lwjgl.input.Mouse;
 
 import java.awt.*;
@@ -23,10 +20,8 @@ public class LeMain implements IPaintListener
 
     private World world = null;
     private World sky = null;
-
     private Object3D plane = null;
     private Object3D puk = null;
-
     private Light sun = null;
 
     private ShadowHelper sh = null;
@@ -77,7 +72,7 @@ public class LeMain implements IPaintListener
     {
     }
 
-    private void init() throws Exception
+    private void loadTextures()
     {
         TextureManager tm = TextureManager.getInstance();
         tm.addTexture("metal", new Texture("res/metal.jpg"));
@@ -90,73 +85,73 @@ public class LeMain implements IPaintListener
         tm.addTexture("cloth", new Texture("res/cloth.jpg"));
         tm.addTexture("solid", new Texture("res/solid.jpg"));
         tm.addTexture("metric.tile", new Texture("res/metric.tile.jpg"));
+    }
 
+    private void initDevices()
+    {
         // Initialize frame buffer
-
-        buffer = new FrameBuffer(640, 480, FrameBuffer.SAMPLINGMODE_NORMAL);
+        buffer = new FrameBuffer(1920, 1080, FrameBuffer.SAMPLINGMODE_NORMAL);
         buffer.disableRenderer(IRenderer.RENDERER_SOFTWARE);
         buffer.enableRenderer(IRenderer.RENDERER_OPENGL, IRenderer.MODE_OPENGL);
         buffer.setPaintListener(this);
 
-        // Initialize worlds
-
-        world = new World();
-        sky = new World();
-        world.setAmbientLight(30, 30, 30);
-        sky.setAmbientLight(255, 255, 255);
-
-        world.getLights().setRGBScale(Lights.RGB_SCALE_2X);
-        sky.getLights().setRGBScale(Lights.RGB_SCALE_2X);
-
         // Initialize mappers
-
         keyMapper = new KeyMapper();
         mouseMapper = new MouseMapper(buffer);
         mouseMapper.hide();
+    }
 
-        // Load/create and setup objects
-
+    private Object3D createPlane()
+    {
         final int planeSize = 32;
-        plane = Primitives.getPlane(planeSize, 1);
+        Object3D plane = Primitives.getPlane(planeSize, 1);
         plane.rotateX(PI / 2f);
         plane.setSpecularLighting(true);
         plane.setTexture("metric.tile");
         //plane.setTexture("grass");
         //plane.setCollisionMode(Object3D.COLLISION_CHECK_OTHERS);
         tileTexture(plane, planeSize);
+        return plane;
+    }
 
-        puk = Primitives.getCylinder(360, 1.0f, 0.2f);
+    private Object3D createPuk()
+    {
+        Object3D puk = ExtendedPrimitives.createCylinder(0.5f, 0.1f, 64, true);
+        puk.translate(0, -1, 0);
         puk.setEnvmapped(Object3D.ENVMAP_ENABLED);
 //        TextureInfo stoneTex = new TextureInfo(tm.getTextureID("rock"));
 //        stoneTex.add(tm.getTextureID("normals"), TextureInfo.MODE_MODULATE);
 //        puk.setTexture(stoneTex);
         puk.setTexture("solid");
         puk.setSpecularLighting(true);
+        return puk;
+    }
 
-        Object3D[] marks = placeMarkers();
-
-        // Add objects to the worlds
-
-        world.addObject(plane);
-        world.addObject(puk);
-        world.addObjects(marks);
-
-        // Build all world's objects
-
-        world.buildAllObjects();
-
-        // Compile all objects for better performance
-
-        plane.compileAndStrip();
-        puk.compileAndStrip();
-        for (int i = 0; i < marks.length; i++)
+    static SimpleVector[] receivers =
+            {
+                    new SimpleVector(3.0f, 0.0f, 0.0f),
+                    new SimpleVector(0.0f, 0.0f, 3.0f),
+                    new SimpleVector(-3.0f, 0.0f, 0.0f),
+                    new SimpleVector(0.0f, 0.0f, -3.0f)
+            };
+    private Object3D[] placeMarkers()
+    {
+        Object3D markers[] = new Object3D[receivers.length];
+        for (int i = 0; i < receivers.length; i++)
         {
-            Object3D mark = marks[i];
-            mark.compileAndStrip();
+            SimpleVector receiver = receivers[i];
+            Object3D marker = ExtendedPrimitives.createCylinder(0.2f, 3.2f, 16, true);
+            marker.setTexture("solid");
+            marker.setSpecularLighting(true);
+            marker.translate(receivers[i]);
+            markers[i] = marker;
         }
+        return markers;
+    }
 
+    private void createLighting()
+    {
         // Initialize shadow helper
-
         projector = new Projector();
         projector.setFOV(1.5f);
         projector.setYFOV(1.5f);
@@ -171,7 +166,6 @@ public class LeMain implements IPaintListener
         sh.addReceiver(plane);
 
         // Setup dynamic light source
-
         sun = new Light(world);
         sun.setIntensity(250, 250, 250);
         sun.setAttenuation(800);
@@ -185,200 +179,76 @@ public class LeMain implements IPaintListener
 //        shader.setStaticUniform("normalMap", 1);
 //        shader.setStaticUniform("invRadius", 0.0005f);
 //        puk.setRenderHook(shader);
+    }
 
+    private void setCamera()
+    {
         // Move camera
-
         Camera cam = world.getCamera();
-        cam.moveCamera(Camera.CAMERA_MOVEOUT, 50);
-        cam.moveCamera(Camera.CAMERA_MOVEUP, 40);
+        cam.moveCamera(Camera.CAMERA_MOVEOUT, 20);
+        cam.moveCamera(Camera.CAMERA_MOVEUP, 20);
 
         cam.lookAt(plane.getTransformedCenter());
         cam.setFOV(1.5f);
-
     }
 
-    private Object3D[] placeMarkers()
+    private void init() throws Exception
     {
-        final int cx = 3;
-        final int cy = 1;
-        final int cz = 3;
-        final int total = cx * cy * cz;
-        int idx = 0;
-        Object3D markers[] = new Object3D[total];
-        for(int x = 0; x < cx; x++)
+        loadTextures();
+        initDevices();
+
+        // Initialize worlds
+        world = new World();
+        world.setAmbientLight(30, 30, 30);
+        world.getLights().setRGBScale(Lights.RGB_SCALE_2X);
+        sky = new World();
+        sky.setAmbientLight(255, 255, 255);
+        sky.getLights().setRGBScale(Lights.RGB_SCALE_2X);
+
+        // Load/create and setup objects
+        plane = createPlane();
+        puk = createPuk();
+        Object3D[] markers = placeMarkers();
+
+        // Add objects to the worlds
+        world.addObject(plane);
+        world.addObject(puk);
+        world.addObjects(markers);
+
+        // Build all world's objects
+        world.buildAllObjects();
+
+        // Compile all objects for better performance
+        plane.compileAndStrip();
+        puk.compileAndStrip();
+        for (int i = 0; i < markers.length; i++)
         {
-            for(int y = 0; y < cy; y++)
-            {
-                for(int z = 0; z < cz; z++)
-                {
-                    Object3D marker = Primitives.getCylinder(360, 0.2f, 2f);
-                    marker.setEnvmapped(Object3D.ENVMAP_ENABLED);
-//        TextureInfo stoneTex = new TextureInfo(tm.getTextureID("rock"));
-//        stoneTex.add(tm.getTextureID("normals"), TextureInfo.MODE_MODULATE);
-//        marker.setTexture(stoneTex);
-                    marker.setTexture("solid");
-                    marker.setSpecularLighting(true);
-                    marker.translate(x - 1, y, z - 1);
-                    markers[idx++] = marker;
-                }
-            }
+            Object3D mark = markers[i];
+            mark.compileAndStrip();
         }
-        return markers;
+        createLighting();
+        setCamera();
     }
 
-    private void pollControls()
-    {
-
-        KeyState ks;
-        while ((ks = keyMapper.poll()) != KeyState.NONE)
-        {
-            switch (ks.getKeyCode())
-            {
-                case KeyEvent.VK_ESCAPE:
-                    doLoop = false;
-                    break;
-                case KeyEvent.VK_UP:
-                case KeyEvent.VK_W:
-                    forward = ks.getState();
-                    break;
-                case KeyEvent.VK_DOWN:
-                case KeyEvent.VK_S:
-                    backward = ks.getState();
-                    break;
-                case KeyEvent.VK_LEFT:
-                case KeyEvent.VK_A:
-                    left = ks.getState();
-                    break;
-                case KeyEvent.VK_RIGHT:
-                case KeyEvent.VK_D:
-                    right = ks.getState();
-                    break;
-                case KeyEvent.VK_PAGE_UP:
-                case KeyEvent.VK_Q:
-                    up = ks.getState();
-                    break;
-                case KeyEvent.VK_PAGE_DOWN:
-                case KeyEvent.VK_E:
-                    down = ks.getState();
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        if (org.lwjgl.opengl.Display.isCloseRequested())
-        {
-            doLoop = false;
-        }
-    }
-
-
-    private void move(long ticks)
-    {
-
-        if (ticks == 0)
-        {
-            return;
-        }
-
-        // Key controls
-
-        SimpleVector ellipsoid = new SimpleVector(5, 5, 5);
-
-        if (forward)
-        {
-            world.checkCameraCollisionEllipsoid(Camera.CAMERA_MOVEIN, ellipsoid, ticks, 5);
-        }
-
-        if (backward)
-        {
-            world.checkCameraCollisionEllipsoid(Camera.CAMERA_MOVEOUT, ellipsoid, ticks, 5);
-        }
-
-        if (left)
-        {
-            world.checkCameraCollisionEllipsoid(Camera.CAMERA_MOVELEFT, ellipsoid, ticks, 5);
-        }
-
-        if (right)
-        {
-            world.checkCameraCollisionEllipsoid(Camera.CAMERA_MOVERIGHT, ellipsoid, ticks, 5);
-        }
-
-        if (up)
-        {
-            world.checkCameraCollisionEllipsoid(Camera.CAMERA_MOVEUP, ellipsoid, ticks, 5);
-        }
-
-        if (down)
-        {
-            world.checkCameraCollisionEllipsoid(Camera.CAMERA_MOVEDOWN, ellipsoid, ticks, 5);
-        }
-
-        // mouse rotation
-
-        Matrix rot = world.getCamera().getBack();
-        int dx = mouseMapper.getDeltaX();
-        int dy = mouseMapper.getDeltaY();
-
-        float ts = 0.2f * ticks;
-        float tsy = ts;
-
-        if (dx != 0)
-        {
-            ts = dx / 500f;
-        }
-        if (dy != 0)
-        {
-            tsy = dy / 500f;
-        }
-
-        if (dx != 0)
-        {
-            rot.rotateAxis(rot.getYAxis(), ts);
-        }
-
-        if ((dy > 0 && xAngle < Math.PI / 4.2) || (dy < 0 && xAngle > -Math.PI / 4.2))
-        {
-            rot.rotateX(tsy);
-            xAngle += tsy;
-        }
-
-        // Update the skydome
-
-        sky.getCamera().setBack(world.getCamera().getBack().cloneMatrix());
-        //dome.rotateY(0.00005f * ticks);
-    }
-
-//    GLFont glFont = GLFont.getGLFont(new java.awt.Font("Dialog", Font.PLAIN, 12));
+    GLFont glFont = GLFont.getGLFont(new java.awt.Font("Dialog", Font.PLAIN, 12));
     private void gameLoop() throws Exception
     {
-
-        //SimpleVector pos = snork.getTransformedCenter();
         SimpleVector pos = plane.getTransformedCenter();
         SimpleVector offset = new SimpleVector(1, 0, -1).normalize();
 
         long ticks;
+        int lastFps = 0;
 
         while (doLoop)
         {
-
             ticks = ticker.getTicks();
             if (ticks > 0)
             {
-                // animate the snork and the dome
-
-                animate(ticks);
-                offset.rotateY(0.007f * ticks);
-
-                // move the camera
-
                 pollControls();
                 move(ticks);
             }
 
             // update the projector for the shadow map
-
             projector.lookAt(plane.getTransformedCenter());
             projector.setPosition(pos);
             projector.moveCamera(new SimpleVector(0, -1, 0), 200);
@@ -387,11 +257,9 @@ public class LeMain implements IPaintListener
             sun.setPosition(projector.getPosition());
 
             // update the shadow map
-
             sh.updateShadowMap();
 
             // render the scene
-
             buffer.clear();
 
             buffer.setPaintListenerState(false);
@@ -400,11 +268,10 @@ public class LeMain implements IPaintListener
             buffer.setPaintListenerState(true);
             sh.drawScene();
             buffer.update();
+            glFont.blitString(buffer, String.format("%d fps", lastFps), 10, 10, 0, Color.ORANGE);
             buffer.displayGLOnly();
 
             // print out the fps to the console
-
-            int lastFps = 0;
             if (System.currentTimeMillis() - time >= 1000)
             {
                 System.out.println(fps);
@@ -413,16 +280,11 @@ public class LeMain implements IPaintListener
                 time = System.currentTimeMillis();
             }
         }
-//        buffer.update();
-//        glFont.blitString(frameBuffer, "this is a blitted text", x, y, Color.ORANGE);
-//        buffer.display(null);
-
         // exit...
-
         System.exit(0);
     }
 
-    int cLoops = 0;
+    //int cLoops = 0;
     private void animate(long ticks)
     {
         if (ticks > 0)
@@ -471,6 +333,135 @@ public class LeMain implements IPaintListener
         }
     }
 
+    private void pollControls()
+    {
+
+        KeyState ks;
+        while ((ks = keyMapper.poll()) != KeyState.NONE)
+        {
+            switch (ks.getKeyCode())
+            {
+                case KeyEvent.VK_ESCAPE:
+                    doLoop = false;
+                    break;
+                case KeyEvent.VK_UP:
+                case KeyEvent.VK_W:
+                    forward = ks.getState();
+                    break;
+                case KeyEvent.VK_DOWN:
+                case KeyEvent.VK_S:
+                    backward = ks.getState();
+                    break;
+                case KeyEvent.VK_LEFT:
+                case KeyEvent.VK_A:
+                    left = ks.getState();
+                    break;
+                case KeyEvent.VK_RIGHT:
+                case KeyEvent.VK_D:
+                    right = ks.getState();
+                    break;
+                case KeyEvent.VK_PAGE_UP:
+                case KeyEvent.VK_Q:
+                    up = ks.getState();
+                    break;
+                case KeyEvent.VK_PAGE_DOWN:
+                case KeyEvent.VK_E:
+                    down = ks.getState();
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (org.lwjgl.opengl.Display.isCloseRequested())
+        {
+            doLoop = false;
+        }
+    }
+
+    static final float step = 0.1f;
+    private void move(long ticks)
+    {
+
+        if (ticks == 0)
+        {
+            return;
+        }
+
+        // Key controls
+
+        SimpleVector ellipsoid = new SimpleVector(5, 5, 5);
+
+        if (forward)
+        {
+            //world.checkCameraCollisionEllipsoid(Camera.CAMERA_MOVEIN, ellipsoid, ticks, 5);
+            puk.translate(0, 0, step);
+        }
+
+        if (backward)
+        {
+            //world.checkCameraCollisionEllipsoid(Camera.CAMERA_MOVEOUT, ellipsoid, ticks, 5);
+            puk.translate(0, 0, -step);
+        }
+
+        if (left)
+        {
+            //world.checkCameraCollisionEllipsoid(Camera.CAMERA_MOVELEFT, ellipsoid, ticks, 5);
+            puk.translate(-step, 0, 0);
+        }
+
+        if (right)
+        {
+            //world.checkCameraCollisionEllipsoid(Camera.CAMERA_MOVERIGHT, ellipsoid, ticks, 5);
+            puk.translate(step, 0, 0);
+        }
+
+        if (up)
+        {
+            //world.checkCameraCollisionEllipsoid(Camera.CAMERA_MOVEUP, ellipsoid, ticks, 5);
+            puk.translate(0, step, 0);
+        }
+
+        if (down)
+        {
+            //world.checkCameraCollisionEllipsoid(Camera.CAMERA_MOVEDOWN, ellipsoid, ticks, 5);
+            puk.translate(0, -step, 0);
+        }
+
+        // mouse rotation
+
+        Matrix rot = world.getCamera().getBack();
+        int dx = mouseMapper.getDeltaX();
+        int dy = mouseMapper.getDeltaY();
+
+        float ts = 0.2f * ticks;
+        float tsy = ts;
+
+        if (dx != 0)
+        {
+            ts = dx / 500f;
+        }
+        if (dy != 0)
+        {
+            tsy = dy / 500f;
+        }
+
+        if (dx != 0)
+        {
+            rot.rotateAxis(rot.getYAxis(), ts);
+        }
+
+        if ((dy > 0 && xAngle < Math.PI / 4.2) || (dy < 0 && xAngle > -Math.PI / 4.2))
+        {
+            rot.rotateX(tsy);
+            xAngle += tsy;
+        }
+
+        // Update the skydome
+
+        sky.getCamera().setBack(world.getCamera().getBack().cloneMatrix());
+        //dome.rotateY(0.00005f * ticks);
+    }
 
     private static class MouseMapper
     {
@@ -534,7 +525,7 @@ public class LeMain implements IPaintListener
 
         public int getDeltaX()
         {
-            if (Mouse.isGrabbed())
+            if (buttonDown(0)) //(Mouse.isGrabbed())
             {
                 return Mouse.getDX();
             }
@@ -546,7 +537,7 @@ public class LeMain implements IPaintListener
 
         public int getDeltaY()
         {
-            if (Mouse.isGrabbed())
+            if (buttonDown(0)) //(Mouse.isGrabbed())
             {
                 return Mouse.getDY();
             }
