@@ -89,10 +89,11 @@ public class LeMain implements IPaintListener
         tm.addTexture("sky", new Texture("res/sky.jpg"));
         tm.addTexture("cloth", new Texture("res/cloth.jpg"));
         tm.addTexture("solid", new Texture("res/solid.jpg"));
+        tm.addTexture("metric.tile", new Texture("res/metric.tile.jpg"));
 
         // Initialize frame buffer
 
-        buffer = new FrameBuffer(1920, 1080, FrameBuffer.SAMPLINGMODE_NORMAL);
+        buffer = new FrameBuffer(640, 480, FrameBuffer.SAMPLINGMODE_NORMAL);
         buffer.disableRenderer(IRenderer.RENDERER_SOFTWARE);
         buffer.enableRenderer(IRenderer.RENDERER_OPENGL, IRenderer.MODE_OPENGL);
         buffer.setPaintListener(this);
@@ -115,13 +116,14 @@ public class LeMain implements IPaintListener
 
         // Load/create and setup objects
 
-        plane = Primitives.getPlane(60, 60);
+        final int planeSize = 32;
+        plane = Primitives.getPlane(planeSize, 1);
         plane.rotateX(PI / 2f);
         plane.setSpecularLighting(true);
-        plane.setTexture("cloth");
+        plane.setTexture("metric.tile");
         //plane.setTexture("grass");
         //plane.setCollisionMode(Object3D.COLLISION_CHECK_OTHERS);
-        tileTexture(plane, 100.0f);
+        tileTexture(plane, planeSize);
 
         puk = Primitives.getCylinder(360, 1.0f, 0.2f);
         puk.setEnvmapped(Object3D.ENVMAP_ENABLED);
@@ -131,10 +133,13 @@ public class LeMain implements IPaintListener
         puk.setTexture("solid");
         puk.setSpecularLighting(true);
 
+        Object3D[] marks = placeMarkers();
+
         // Add objects to the worlds
 
         world.addObject(plane);
         world.addObject(puk);
+        world.addObjects(marks);
 
         // Build all world's objects
 
@@ -144,6 +149,11 @@ public class LeMain implements IPaintListener
 
         plane.compileAndStrip();
         puk.compileAndStrip();
+        for (int i = 0; i < marks.length; i++)
+        {
+            Object3D mark = marks[i];
+            mark.compileAndStrip();
+        }
 
         // Initialize shadow helper
 
@@ -179,11 +189,41 @@ public class LeMain implements IPaintListener
         // Move camera
 
         Camera cam = world.getCamera();
-        cam.moveCamera(Camera.CAMERA_MOVEOUT, 150);
-        cam.moveCamera(Camera.CAMERA_MOVEUP, 100);
+        cam.moveCamera(Camera.CAMERA_MOVEOUT, 50);
+        cam.moveCamera(Camera.CAMERA_MOVEUP, 40);
+
         cam.lookAt(plane.getTransformedCenter());
         cam.setFOV(1.5f);
 
+    }
+
+    private Object3D[] placeMarkers()
+    {
+        final int cx = 3;
+        final int cy = 1;
+        final int cz = 3;
+        final int total = cx * cy * cz;
+        int idx = 0;
+        Object3D markers[] = new Object3D[total];
+        for(int x = 0; x < cx; x++)
+        {
+            for(int y = 0; y < cy; y++)
+            {
+                for(int z = 0; z < cz; z++)
+                {
+                    Object3D marker = Primitives.getCylinder(360, 0.2f, 2f);
+                    marker.setEnvmapped(Object3D.ENVMAP_ENABLED);
+//        TextureInfo stoneTex = new TextureInfo(tm.getTextureID("rock"));
+//        stoneTex.add(tm.getTextureID("normals"), TextureInfo.MODE_MODULATE);
+//        marker.setTexture(stoneTex);
+                    marker.setTexture("solid");
+                    marker.setSpecularLighting(true);
+                    marker.translate(x - 1, y, z - 1);
+                    markers[idx++] = marker;
+                }
+            }
+        }
+        return markers;
     }
 
     private void pollControls()
@@ -310,7 +350,7 @@ public class LeMain implements IPaintListener
         //dome.rotateY(0.00005f * ticks);
     }
 
-
+//    GLFont glFont = GLFont.getGLFont(new java.awt.Font("Dialog", Font.PLAIN, 12));
     private void gameLoop() throws Exception
     {
 
@@ -364,13 +404,18 @@ public class LeMain implements IPaintListener
 
             // print out the fps to the console
 
+            int lastFps = 0;
             if (System.currentTimeMillis() - time >= 1000)
             {
                 System.out.println(fps);
+                lastFps = fps;
                 fps = 0;
                 time = System.currentTimeMillis();
             }
         }
+//        buffer.update();
+//        glFont.blitString(frameBuffer, "this is a blitted text", x, y, Color.ORANGE);
+//        buffer.display(null);
 
         // exit...
 
