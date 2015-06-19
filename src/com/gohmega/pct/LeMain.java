@@ -84,6 +84,7 @@ public class LeMain implements IPaintListener
         tm.addTexture("sky", new Texture("res/sky.jpg"));
         tm.addTexture("cloth", new Texture("res/cloth.jpg"));
         tm.addTexture("solid", new Texture("res/solid.jpg"));
+        tm.addTexture("transparent.tile", new Texture("res/transparent.tile.png"));
         tm.addTexture("metric.tile", new Texture("res/metric.tile.jpg"));
     }
 
@@ -107,7 +108,7 @@ public class LeMain implements IPaintListener
         Object3D plane = Primitives.getPlane(planeSize, 1);
         plane.rotateX(PI / 2f);
         plane.setSpecularLighting(true);
-        plane.setTexture("metric.tile");
+        plane.setTexture("transparent.tile");
         //plane.setTexture("grass");
         //plane.setCollisionMode(Object3D.COLLISION_CHECK_OTHERS);
         tileTexture(plane, planeSize);
